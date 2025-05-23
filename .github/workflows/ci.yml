@@ -1,4 +1,4 @@
-name: Java CI with Docker
+name: CI/CD Pipeline for Java Spring Boot with Docker
 
 on:
   push:
@@ -10,21 +10,32 @@ on:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Sử dụng Ubuntu để build ứng dụng
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v3  # Checkout mã nguồn từ GitHub
 
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
-        distribution: 'temurin'  # Cài đặt JDK 17
+        distribution: 'temurin'
         java-version: '17'
 
     - name: Build with Maven
-      run: mvn clean package
+      run: mvn clean package -DskipTests  # Build ứng dụng mà không chạy test trong quá trình này
 
     - name: Run tests
-      run: mvn test
+      run: mvn test  # Chạy các bài kiểm tra tự động (unit tests)
+
+    - name: Build Docker image
+      run: |
+        docker build -t payment-service .  # Tạo Docker image từ Dockerfile
+        # Lưu ý: payment-service là tên của Docker image, bạn có thể thay đổi tên theo ý muốn.
+
+    - name: Run Docker container for tests
+      run: |
+        docker run -d -p 8080:8080 payment-service  # Chạy container ứng dụng
+        sleep 10  # Đợi một chút để ứng dụng khởi động
+        curl http://localhost:8080/actuator/health
+        docker stop $(docker ps -q)
